@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090806">
+<title>AM Trading Levels</title>
+<style>
+:root{--bg:#090806;--panel:#15120d;--gold:#d8ad52;--gold2:#ffe4a0;--green:#075c35;--green2:#12a65a;--text:#f8f1df;--muted:#b6ab91;--line:#4a3820}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#241a0a 0%,var(--bg) 55%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:720px;margin:auto;padding:22px 15px 40px}
+header{text-align:center;padding:14px 8px 22px;animation:fadeDown .65s ease both}
+.brand{font-size:13px;letter-spacing:5px;color:var(--gold);text-transform:uppercase}
+h1{margin:7px 0;color:var(--gold2);font-size:clamp(29px,8vw,44px);letter-spacing:3px;text-shadow:0 0 22px #b9832a55}
+.subtitle{color:var(--muted);font-size:13px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+button{font:inherit;font-weight:700;cursor:pointer;transition:transform .18s ease,box-shadow .22s ease,background .22s ease}
+button:active{transform:scale(.98)}
+.tab{padding:13px 8px;border:1px solid var(--line);border-radius:12px;background:#100e0a;color:var(--gold2)}
+.tab.active{background:linear-gradient(135deg,#07502e,#087b43);border-color:#1bb86b;box-shadow:0 0 18px #0bb35b35}
+.panel{background:linear-gradient(145deg,#19140c,#0e0c09);border:1px solid var(--line);border-radius:17px;padding:17px;margin:12px 0;box-shadow:0 8px 25px #0005;animation:fadeUp .45s ease both}
+label{display:block;font-size:13px;color:var(--gold2);margin:11px 0 7px}
+input{width:100%;padding:14px;border-radius:10px;border:1px solid #5c4728;background:#090806;color:var(--text);font-size:19px;outline:none;transition:border .2s,box-shadow .2s}
+input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #d8ad5220}
+button.primary{width:100%;margin-top:15px;padding:14px;border:1px solid #23c46c;border-radius:11px;background:linear-gradient(120deg,#07502e,#087b43,#07502e);background-size:200% 100%;color:#fff;box-shadow:0 0 17px #0caa5430;animation:shine 5s ease infinite}
+button.primary:hover{box-shadow:0 0 22px #16b96565}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.secondary{padding:12px;border-radius:10px;border:1px solid var(--gold);background:#151109;color:var(--gold2);margin-top:11px}
+h2{font-size:17px;margin:0 0 9px;color:var(--gold2)}
+h3{font-size:14px;margin:18px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 5px;text-align:right;border-bottom:1px solid #3b2d19;font-variant-numeric:tabular-nums}
+th{font-size:11px;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+.up{color:#42df91;font-weight:750}.down{color:#ffd16d;font-weight:750}
+.hidden{display:none}.muted,.note{color:var(--muted);font-size:12px;line-height:1.5}
+.note{margin-top:14px;padding:11px;border:1px solid #55401e;border-radius:10px;background:#201707}
+#results{animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shine{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media(max-width:360px){main{padding:14px 9px} .panel{padding:12px}table{font-size:11px}th,td{padding:8px 2px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="brand">AM · Trading System</div>
+  <h1>AM LEVELS</h1>
+  <div class="subtitle">Opening Range Projection Calculator</div>
+</header>
+<nav class="tabs">
+  <button class="tab active" id="niftyTab" onclick="switchTab('nifty')">Nifty Chart</button>
+  <button class="tab" id="optionTab" onclick="switchTab('option')">Option Charts</button>
+</nav>
+<section class="panel">
+  <label for="range">Yesterday Range</label>
+  <input id="range" type="number" inputmode="decimal" min="0" step="any" placeholder="Previous high − previous low">
+  <label for="opening">Today Open Price</label>
+  <input id="opening" type="number" inputmode="decimal" step="any" placeholder="Opening price">
+  <button class="primary" onclick="calculate()">Calculate Levels</button>
+  <div class="muted" id="status" style="margin-top:9px">Selected: Nifty Chart</div>
+</section>
+<section id="results" class="panel hidden">
+  <h2 id="resultTitle">Nifty Chart Levels</h2>
+  <div id="summary" class="muted"></div>
+  <div id="resultBody"></div>
+  <div class="row">
+    <button class="secondary" onclick="copyResults()">Copy Levels</button>
+    <button class="secondary" onclick="resetForm()">Reset</button>
+  </div>
+  <div class="note">ⓘ These are mathematical projections, not guaranteed support/resistance or buy/sell signals. Confirm with price action and manage risk.</div>
+</section>
+</main>
+<script>
+let currentTab='nifty',resultText='';
+function switchTab(tab){
+ currentTab=tab;
+ document.getElementById('niftyTab').classList.toggle('active',tab==='nifty');
+ document.getElementById('optionTab').classList.toggle('active',tab==='option');
+ document.getElementById('status').textContent='Selected: '+(tab==='nifty'?'Nifty Chart':'Option Charts');
+ document.getElementById('results').classList.add('hidden');
+}
+function fmt(n){return Number(n).toFixed(2)}
+function calculate(){
+ const rr=document.getElementById('range').value,oo=document.getElementById('opening').value,r=Number(rr),o=Number(oo);
+ if(rr===''||oo===''||!Number.isFinite(r)||!Number.isFinite(o)||r<=0){alert('Enter a valid positive Yesterday Range and Today Open Price.');return}
+ const bases=[0.111,0.333,0.666],levels=[];
+ bases.forEach(b=>{
+   const parts=currentTab==='nifty'?[1]:[0.25,0.5];
+   parts.forEach(p=>{
+     const off=r*b*p;
+     levels.push({formula:p===1?b.toFixed(3)+' × range':b.toFixed(3)+' × '+p,offset:off,up:o+off,down:o-off});
+   });
+ });
+ levels.sort((a,b)=>a.offset-b.offset);
+ const row=(x,s)=>'<tr><td>'+x.formula+'</td><td>'+(s==='up'?'+':'−')+fmt(x.offset)+'</td><td class="'+s+'">'+fmt(s==='up'?x.up:x.down)+'</td></tr>';
+ const table=(title,s)=>'<h3 class="'+s+'">'+title+'</h3><table><thead><tr><th>Formula</th><th>Offset</th><th>Price level</th></tr></thead><tbody>'+levels.map(x=>row(x,s)).join('')+'</tbody></table>';
+ document.getElementById('resultTitle').textContent=currentTab==='nifty'?'Nifty Chart Levels':'Option Chart Levels';
+ document.getElementById('summary').textContent='Yesterday Range: '+fmt(r)+' · Today Open: '+fmt(o);
+ document.getElementById('resultBody').innerHTML=table(currentTab==='nifty'?'Upper Values (+)':'Upside Levels (+)','up')+table(currentTab==='nifty'?'Bottom Values (−)':'Downside Levels (−)','down');
+ resultText='AM '+(currentTab==='nifty'?'Nifty Chart':'Option Charts')+' Levels\nYesterday Range: '+fmt(r)+'\nToday Open: '+fmt(o)+'\n\n'+levels.map(x=>x.formula+' | offset '+fmt(x.offset)+' | upside '+fmt(x.up)+' | downside '+fmt(x.down)).join('\n');
+ document.getElementById('results').classList.remove('hidden');
+}
+async function copyResults(){
+ if(!resultText)return;
+ try{await navigator.clipboard.writeText(resultText);alert('Levels copied.')}
+ catch(e){window.prompt('Copy your levels:',resultText)}
+}
+function resetForm(){
+ document.getElementById('range').value='';
+ document.getElementById('opening').value='';
+ document.getElementById('results').classList.add('hidden');resultText='';
+}
+</script>
+</body></html>
